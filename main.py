@@ -91,4 +91,59 @@ def prepare_objects(items):
          seen.add(key)
          output.append(item)
 
-    return output
+        return output 
+    def groups(items, size):
+    return [items[i:i + size] for i in range(0, len(items), size)]
+
+
+def fonts():
+    try:
+        return [ImageFont.truetype("arial.ttf", size) for size in (28, 18, 14)]
+    except Exception:
+        return [ImageFont.load_default()] * 3
+
+
+def hud(img, scene, objects, page, total):
+    img = img.convert("RGBA")
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    (w, h), (title_font, label_font, small_font) = img.size, fonts()
+
+    green = (57, 255, 20, 255)
+    panel = (0, 20, 10, 185)
+    red = (255, 60, 60, 255)
+
+    draw.rectangle((20, 20, 20 + w - 40, 70), fill=panel)
+    draw.text((35, 32), f" {scene.upper()} [{page}/{total}] ", fill=green, font=title_font)
+    draw.ellipse((w - 120, 28, w - 104, 44), fill=red)
+    draw.text((w - 96, 26), "REC", fill=green, font=label_font)
+    for obj in objects:
+    box = obj.get("box", {})
+    if not all(k in box for k in ("x", "y", "w", "h")):
+        continue
+
+    x1, y1, x2, y2 = px(box, w, h)
+    draw.rectangle((x1, y1, x2, y2), outline=green, width=2)
+
+    for a, b, c, d in [
+        (x1, y1, x1, y1 + 18), (x1, y1, x1 + 18, y1),
+        (x2, y1, x2 - 18, y1), (x2, y1, x2, y1 + 18),
+        (x1, y2, x1 + 18, y2), (x1, y2, x1, y2 - 18),
+        (x2, y2, x2 - 18, y2), (x2, y2, x2, y2 - 18),
+    ]:
+        draw.line((a, b, c, d), fill=green, width=3)
+
+    label = obj.get("short_label", obj.get("name", "UNKNOWN")).upper()
+    meta = obj.get("fun_metadata", "NO DATA")
+    conf = obj.get("confidence", "low").upper()
+    panel_y = max(80, y1 - 55)
+
+    if panel_y < 80:
+        panel_y = min(h - 80, y2 + 10)
+
+    panel_x1 = x1
+    panel_x2 = min(w - 20, x1 + 320)
+    panel_y2 = panel_y + 45
+
+    draw.rectangle((panel_x1, panel_y, panel_x2, panel_y2), fill=panel, outline=green)
+    draw.text((panel_x1 + 8, panel_y + 6), f"[ITEM] {label}", fill=green, font=label_font)
